@@ -44,7 +44,7 @@ async def review_pr(request: PRRequest):
             safe_name = file_path.replace("/", "_#").replace("\\", "_#")
             diff_file_path = os.path.join(diffs_dir, f"{safe_name}.diff")
 
-            # 🧹 Avoid duplicate write
+            # Avoid duplicate write
             if os.path.exists(diff_file_path):
                 os.remove(diff_file_path)
 
@@ -67,14 +67,29 @@ async def review_pr(request: PRRequest):
         # Step 5️⃣: Build AI Input JSON
         ai_input = build_ai_input(pr_details)
         # print("ai_input-->", ai_input)
+        ai_review = {}
+ 
+        for file in ai_input.get("files", []):
+            Ai_inpputData = {
+                "title": ai_input['title'],
+                "source_branch": ai_input['source_branch'],
+                "target_branch": ai_input['target_branch'],
+                "files_changed": ai_input['files_changed'],
+                "files": [
+                    {
+                        "file_name": file['file_name'],   
+                        "new_code": file['new_code']       
+                    }
+                ]
+            }
+                
+            # as of now we are only analysis only 1 file for testing
+            ai_review = analyze_pr_with_ai(Ai_inpputData)
+            # Step 5️⃣ (continued): Post AI comments to Azure PR
+            azure_result = post_comments_to_azure(request.pr_id, ai_review, ai_review.get("filePath"))
+            # break
 
-        # as of now we are only analysis only 1 file for testing
-        ai_review = analyze_pr_with_ai(ai_input)
-
-        # Step 5️⃣ (continued): Post AI comments to Azure PR
-        azure_result = post_comments_to_azure(request.pr_id, ai_review, ai_review.get("filePath"))
-
-        
+            
         # Step 6️⃣: Return full response
         return {
             "message": "PR diff summary, sdiff, and AI input generated successfully",
@@ -86,8 +101,8 @@ async def review_pr(request: PRRequest):
                 # "diff_summary": diff_summary,
                 # "saved_diffs": saved_files,
                 # "sdiff": sdiff_result,
-                "ai_input": ai_input, #ai_input.get("files", [])[0],        
-                "ai_review": ai_review,
+                # "ai_input": ai_input,       
+                # "ai_review": ai_review,
                 "azure_result": azure_result 
             }
         }

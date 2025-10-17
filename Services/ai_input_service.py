@@ -37,8 +37,8 @@ def build_ai_input(pr_details: dict):
         "title": pr_details.get("title"),
         "source_branch": pr_details.get("source_branch"),
         "target_branch": pr_details.get("target_branch"),
-        "files_changed": len(result), #len(ai_files),
-        "files": result #ai_files
+        "files_changed": len(ai_files),
+        "files": ai_files
     }
 
     return ai_input
